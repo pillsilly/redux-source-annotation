@@ -57,6 +57,7 @@ export default function createStore<
   preloadedState?: PreloadedState<S>,
   enhancer?: StoreEnhancer<Ext, StateExt>
 ): Store<ExtendState<S, StateExt>, A, StateExt, Ext> & Ext
+//创建store
 export default function createStore<
   S,
   A extends Action,
@@ -67,6 +68,7 @@ export default function createStore<
   preloadedState?: PreloadedState<S> | StoreEnhancer<Ext, StateExt>,
   enhancer?: StoreEnhancer<Ext, StateExt>
 ): Store<ExtendState<S, StateExt>, A, StateExt, Ext> & Ext {
+
   if (
     (typeof preloadedState === 'function' && typeof enhancer === 'function') ||
     (typeof enhancer === 'function' && typeof arguments[3] === 'function')
@@ -77,7 +79,7 @@ export default function createStore<
         'together to a single function.'
     )
   }
-
+  //调整参数
   if (typeof preloadedState === 'function' && typeof enhancer === 'undefined') {
     enhancer = preloadedState as StoreEnhancer<Ext, StateExt>
     preloadedState = undefined
@@ -87,7 +89,7 @@ export default function createStore<
     if (typeof enhancer !== 'function') {
       throw new Error('Expected the enhancer to be a function.')
     }
-
+    //如果第三个参数是一个函数则返回这个，参考applyMiddleware会用到这个
     return enhancer(createStore)(reducer, preloadedState as PreloadedState<
       S
     >) as Store<ExtendState<S, StateExt>, A, StateExt, Ext> & Ext
@@ -96,11 +98,14 @@ export default function createStore<
   if (typeof reducer !== 'function') {
     throw new Error('Expected the reducer to be a function.')
   }
-
+  //reducer
   let currentReducer = reducer
+  //state
   let currentState = preloadedState as S
+  //监听的事件列表
   let currentListeners: (() => void)[] | null = []
   let nextListeners = currentListeners
+  //是否dispatch状态中
   let isDispatching = false
 
   /**
@@ -110,8 +115,10 @@ export default function createStore<
    * This prevents any bugs around consumers calling
    * subscribe/unsubscribe in the middle of a dispatch.
    */
+  //复制currentListeners到nextListeners
   function ensureCanMutateNextListeners() {
     if (nextListeners === currentListeners) {
+      //slice 返回一个新的数组
       nextListeners = currentListeners.slice()
     }
   }
@@ -121,6 +128,7 @@ export default function createStore<
    *
    * @returns The current state tree of your application.
    */
+  //获得state
   function getState(): S {
     if (isDispatching) {
       throw new Error(
@@ -156,6 +164,7 @@ export default function createStore<
    * @param listener A callback to be invoked on every dispatch.
    * @returns A function to remove this change listener.
    */
+  //订阅 当调用dispatch时会触发   也就是state变化后
   function subscribe(listener: () => void) {
     if (typeof listener !== 'function') {
       throw new Error('Expected the listener to be a function.')
@@ -169,13 +178,15 @@ export default function createStore<
           'See https://redux.js.org/api-reference/store#subscribelistener for more details.'
       )
     }
-
+    //当前listener是否还在订阅中
     let isSubscribed = true
-
+    //这儿是为了新添加的订阅不要影响正在执行订阅列表
     ensureCanMutateNextListeners()
+    //添加该订阅到nextListeners中
     nextListeners.push(listener)
-
+    //返回一个取消订阅
     return function unsubscribe() {
+      //如果已经取消订阅
       if (!isSubscribed) {
         return
       }
@@ -188,8 +199,9 @@ export default function createStore<
       }
 
       isSubscribed = false
-
+      //同上
       ensureCanMutateNextListeners()
+      //移除listener
       const index = nextListeners.indexOf(listener)
       nextListeners.splice(index, 1)
       currentListeners = null
@@ -221,32 +233,34 @@ export default function createStore<
    * Note that, if you use a custom middleware, it may wrap `dispatch()` to
    * return something else (for example, a Promise you can await).
    */
+  //派发action
   function dispatch(action: A) {
+    //非纯对象抛出异常
     if (!isPlainObject(action)) {
       throw new Error(
         'Actions must be plain objects. ' +
           'Use custom middleware for async actions.'
       )
     }
-
+    //action.type 是undefined 抛出异常
     if (typeof action.type === 'undefined') {
       throw new Error(
         'Actions may not have an undefined "type" property. ' +
           'Have you misspelled a constant?'
       )
     }
-
+    //在dispatch时抛出异常 防止Reducer中调用dispatch
     if (isDispatching) {
       throw new Error('Reducers may not dispatch actions.')
     }
-
+    //执行reducer
     try {
       isDispatching = true
       currentState = currentReducer(currentState, action)
     } finally {
       isDispatching = false
     }
-
+    //执行所有订阅函数
     const listeners = (currentListeners = nextListeners)
     for (let i = 0; i < listeners.length; i++) {
       const listener = listeners[i]
@@ -266,6 +280,7 @@ export default function createStore<
    * @param nextReducer The reducer for the store to use instead.
    * @returns The same store instance with a new reducer in place.
    */
+  //替换reducer
   function replaceReducer<NewState, NewActions extends A>(
     nextReducer: Reducer<NewState, NewActions>
   ): Store<ExtendState<NewState, StateExt>, NewActions, StateExt, Ext> & Ext {
@@ -337,6 +352,7 @@ export default function createStore<
   // When a store is created, an "INIT" action is dispatched so that every
   // reducer returns their initial state. This effectively populates
   // the initial state tree.
+  //执行 dispatch redux init action
   dispatch({ type: ActionTypes.INIT } as A)
 
   const store = ({

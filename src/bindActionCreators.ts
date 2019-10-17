@@ -4,7 +4,20 @@ import {
   ActionCreator,
   ActionCreatorsMapObject
 } from './types/actions'
+/*
+这个导出的函数使用示例：
+const actions = {
+ addToDo() {
+    return {
+        type: 'ADD_TODO',
+    }
+  }
+}
+bindActionCreators(actions, dispatch) 等同于
+{addToDo:  () => dispatch({ type: types.ADD_TODO })}
+*/
 
+//绑定单个action
 function bindActionCreator<A extends AnyAction = AnyAction>(
   actionCreator: ActionCreator<A>,
   dispatch: Dispatch
@@ -58,10 +71,11 @@ export default function bindActionCreators(
   actionCreators: ActionCreator<any> | ActionCreatorsMapObject,
   dispatch: Dispatch
 ) {
+  //如果是函数直接绑定返回
   if (typeof actionCreators === 'function') {
     return bindActionCreator(actionCreators, dispatch)
   }
-
+  //非对象抛出错误
   if (typeof actionCreators !== 'object' || actionCreators === null) {
     throw new Error(
       `bindActionCreators expected an object or a function, instead received ${
@@ -72,6 +86,7 @@ export default function bindActionCreators(
   }
 
   const boundActionCreators: ActionCreatorsMapObject = {}
+  //循环绑定
   for (const key in actionCreators) {
     const actionCreator = actionCreators[key]
     if (typeof actionCreator === 'function') {

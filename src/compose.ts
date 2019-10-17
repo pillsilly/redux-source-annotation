@@ -88,6 +88,8 @@ export default function compose<R>(
 
 export default function compose<R>(...funcs: Function[]): (...args: any[]) => R
 
+//详细介绍搜下 函数式编程中的compose函数
+//例如：compose(f, g, h) 等同于 (...args) => f(g(h(...args)));
 export default function compose(...funcs: Function[]) {
   if (funcs.length === 0) {
     // infer the argument type so it is usable in inference down the line
@@ -97,6 +99,6 @@ export default function compose(...funcs: Function[]) {
   if (funcs.length === 1) {
     return funcs[0]
   }
-
+  //先理解b(...args)在理解a(b(...args))可能会好理解点
   return funcs.reduce((a, b) => (...args: any) => a(b(...args)))
 }

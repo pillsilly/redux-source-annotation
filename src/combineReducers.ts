@@ -10,6 +10,7 @@ import {
 } from './types/reducers'
 import { CombinedState } from './types/store'
 
+//获得执行reducer后返回undefined时错误信息
 function getUndefinedStateErrorMessage(key: string, action: Action) {
   const actionType = action && action.type
   const actionDescription =
@@ -21,7 +22,7 @@ function getUndefinedStateErrorMessage(key: string, action: Action) {
     `If you want this reducer to hold no value, you can return null instead of undefined.`
   )
 }
-
+//获得警告信息
 function getUnexpectedStateShapeWarningMessage(
   inputState: object,
   reducers: ReducersMapObject,
@@ -33,14 +34,14 @@ function getUnexpectedStateShapeWarningMessage(
     action && action.type === ActionTypes.INIT
       ? 'preloadedState argument passed to createStore'
       : 'previous state received by the reducer'
-
+  //如果reducers是空数组
   if (reducerKeys.length === 0) {
     return (
       'Store does not have a valid reducer. Make sure the argument passed ' +
       'to combineReducers is an object whose values are reducers.'
     )
   }
-
+  //如果state不是纯函数
   if (!isPlainObject(inputState)) {
     const match = Object.prototype.toString
       .call(inputState)
@@ -53,11 +54,25 @@ function getUnexpectedStateShapeWarningMessage(
       `keys: "${reducerKeys.join('", "')}"`
     )
   }
-
+  /**
+   * 后面代码相当于检测state，如果state的keys结构与combineReducers的参数reducers的key结构不符合，则抛出异常
+   *
+   * 比如以下代码：dispatch(action)后抛出异常
+   * const reducers = combineReducers({
+   *     blog : blogReducer
+   * });
+   * const initState = {
+   *     blog:{},
+   *     comment:{}           //多出comment 与combineReducers的Reducers的state结构不符合
+   * }
+   *
+   * createStore(reducers,initState)
+   */
+  //赋值不存在的key
   const unexpectedKeys = Object.keys(inputState).filter(
     key => !reducers.hasOwnProperty(key) && !unexpectedKeyCache[key]
   )
-
+  //保存在unexpectedKeyCache以后不在检测这个key
   unexpectedKeys.forEach(key => {
     unexpectedKeyCache[key] = true
   })
@@ -73,12 +88,12 @@ function getUnexpectedStateShapeWarningMessage(
     )
   }
 }
-
+//检测reducer返回是否正确
 function assertReducerShape(reducers: ReducersMapObject) {
   Object.keys(reducers).forEach(key => {
     const reducer = reducers[key]
     const initialState = reducer(undefined, { type: ActionTypes.INIT })
-
+    //传入一个redux.init action   如果返回的（initialState）是undefined 抛出异常
     if (typeof initialState === 'undefined') {
       throw new Error(
         `Reducer "${key}" returned undefined during initialization. ` +
@@ -88,7 +103,8 @@ function assertReducerShape(reducers: ReducersMapObject) {
           `you can use null instead of undefined.`
       )
     }
-
+    //传入一个随机的action 如果返回的是undefined 抛出异常
+    //对于未知的action，你必须返回当前state
     if (
       typeof reducer(undefined, {
         type: ActionTypes.PROBE_UNKNOWN_ACTION()
@@ -136,9 +152,12 @@ export default function combineReducers<M extends ReducersMapObject<any, any>>(
   CombinedState<StateFromReducersMapObject<M>>,
   ActionFromReducersMapObject<M>
 >
+//合并多个reducers
 export default function combineReducers(reducers: ReducersMapObject) {
   const reducerKeys = Object.keys(reducers)
+  //最终的reducers
   const finalReducers: ReducersMapObject = {}
+  //赋值是函数的reducer到finalReducers
   for (let i = 0; i < reducerKeys.length; i++) {
     const key = reducerKeys[i]
 
@@ -160,14 +179,14 @@ export default function combineReducers(reducers: ReducersMapObject) {
   if (process.env.NODE_ENV !== 'production') {
     unexpectedKeyCache = {}
   }
-
+  //检测reducers
   let shapeAssertionError: Error
   try {
     assertReducerShape(finalReducers)
   } catch (e) {
     shapeAssertionError = e
   }
-
+  //返回一个合成的reducer
   return function combination(
     state: StateFromReducersMapObject<typeof reducers> = {},
     action: AnyAction
@@ -175,7 +194,7 @@ export default function combineReducers(reducers: ReducersMapObject) {
     if (shapeAssertionError) {
       throw shapeAssertionError
     }
-
+    //检测合法
     if (process.env.NODE_ENV !== 'production') {
       const warningMessage = getUnexpectedStateShapeWarningMessage(
         state,
@@ -187,7 +206,7 @@ export default function combineReducers(reducers: ReducersMapObject) {
         warning(warningMessage)
       }
     }
-
+    //逐步执行每个reducer，然后把每个返回的state合成一个state并返回
     let hasChanged = false
     const nextState: StateFromReducersMapObject<typeof reducers> = {}
     for (let i = 0; i < finalReducerKeys.length; i++) {

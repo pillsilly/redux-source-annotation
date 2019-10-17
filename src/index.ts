@@ -43,7 +43,8 @@ export { Action, AnyAction } from './types/actions'
  * If the function has been minified and NODE_ENV !== 'production', warn the user.
  */
 function isCrushed() {}
-
+//如果 当前环境非production 并且 使用了混淆代码
+//警告你的开发会变慢，因为混淆代码消耗性能
 if (
   process.env.NODE_ENV !== 'production' &&
   typeof isCrushed.name === 'string' &&
