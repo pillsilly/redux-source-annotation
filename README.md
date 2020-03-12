@@ -7,4 +7,4 @@ redux源码中文注解，[redux教程](http://www.redux.org.cn/)
 ## 要点
 1. store.subscribe，订阅的事件都push在nextListeners中，而执行订阅时拷贝到currentListeners，这样新添加的事件不会影响正在执行监听列表
 
-2. applyMiddleware，应该是最复杂的部分，巧妙的利用了函数式编程的compose，[详细](src/applyMiddleware.js)
+2. applyMiddleware，应该是最复杂的部分，巧妙的利用了函数式编程的compose，[详细](src/applyMiddleware.ts)
